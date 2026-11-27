@@ -51,6 +51,31 @@ python numerology.py 2000-01-01 --year 2026
 - `numerology.py` prints Life Path, Birth Day, and Personal Year. Life Path reduces birth year + month + day. Birth Day reduces the day of the month. Personal Year replaces the birth year with the requested calendar year. This implementation reduces to one digit, including 11, 22, and 33. It needs only Python and runs offline.
 - With `--transits` or `--timeline` enabled, optional AI modes can interpret those results alongside the natal chart.
 
+## Palmistry
+
+Enter the features you observe on one hand. Run `python palmistry.py --help` for the location of each line and the supported shapes. Omit any feature you are unsure about.
+
+```sh
+python palmistry.py --hand right --heart curved --head straight --life wide-arc --fate faint
+python palmistry.py --hand right --heart curved --reading ollama --model qwen3:8b
+python palmistry.py --hand right --heart curved --reading openai --model MODEL_ID
+```
+
+The default reading runs offline with Python alone. Ollama can expand it using a downloaded local model without a key. OpenAI mode sends the chosen hand and line descriptions to OpenAI and requires `OPENAI_API_KEY`. The command needs no birth details. Palmistry is presented as folklore for reflection.
+
+### Palm photos
+
+Take a straight-on photo of one open palm with even lighting. Keep the wrist and fingers in frame so the model can orient itself. Use a JPEG or PNG up to 10 MB and select a vision-capable model. The terminal asks you to confirm, edit, or skip suggested labels before it generates the reading.
+
+```sh
+python palmistry.py --hand right --photo palm.jpg --reading ollama --model VISION_MODEL
+python palmistry.py --hand right --photo palm.jpg --reading openai --model VISION_MODEL --allow-photo-upload
+```
+
+With a downloaded Ollama vision model and cloud features disabled, photo analysis can run locally without a key. OpenAI photo mode uploads the original image bytes, which may contain metadata. It requires explicit permission via `--allow-photo-upload`. The second request, for interpretation, includes only confirmed line descriptions and the selected hand. The tool does not save the image or reading. For fully offline use without a vision model, enter the line shapes manually.
+
+The model may miss or misclassify creases. Confirm the labels against your photo. A confirmed crease is an observation. Its traditional interpretation cannot reliably predict future events.
+
 ## Tests
 
 ```sh
