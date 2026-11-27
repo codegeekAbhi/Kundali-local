@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Calculate your Vedic kundli, Vimshottari dasha and numerology in your browser. Explore traditional palmistry with no account or API key.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self'; connect-src 'self' https://cdn.jsdelivr.net https://photon.komoot.io http://127.0.0.1:11434; img-src blob:; base-uri 'none'; form-action 'none'">
+<title>Kundali Local · Vedic Chart &amp; Numerology</title>
+<link rel="stylesheet" href="./style.css">
+<script type="module" src="./app.mjs"></script>
+</head>
+<body>
+<header><a class="brand" href="./">◈ Kundali Local</a><a href="https://github.com/codegeekAbhi/Kundali-local">GitHub ↗</a></header>
+<main>
+<section class="intro"><h1>Your birth chart, calculated in your browser.</h1><p>Explore Vedic astrology, date numerology, and traditional palmistry. No account or API key.</p></section>
+<div class="layout">
+<section class="panel">
+<label for="tool">Choose a tool</label>
+<select id="tool"><option value="chart">Vedic chart &amp; transits</option><option value="numbers">Numerology</option><option value="palm">Palmistry</option></select>
+<form id="chart">
+<h2>Birth details</h2>
+<div class="fields">
+<label>Local birth date<input name="date" type="date" min="1800-01-01" max="2399-12-31" required></label>
+<label>Local birth time<input name="time" placeholder="04:50" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" required><small>24-hour time, e.g. 04:50 for 4:50 a.m.</small></label>
+</div>
+<div class="birthplace">
+<label for="place-mode">Birthplace</label>
+<select id="place-mode"><option value="search">Search by city, district, or village</option><option value="coordinates">Enter latitude and longitude</option></select>
+<div id="place-search">
+<label for="place-query">Place name</label>
+<div class="search-row"><input id="place-query" maxlength="140" placeholder="Village, district, state, country"><button id="search-place" type="button">Search</button></div>
+<small>Search sends this place name to Photon. <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a></small>
+<label id="place-matches-label" hidden>Choose the matching place<select id="place-matches"></select></label>
+<small id="place-status" role="status"></small>
+</div>
+<div id="place-coordinates" class="fields" hidden>
+<label>Latitude<input name="lat" type="number" min="-89.9999" max="89.9999" step="any"></label>
+<label>Longitude<input name="lon" type="number" min="-180" max="180" step="any"><small>East positive, west negative.</small></label>
+</div>
+</div>
+<details><summary>Advanced options</summary>
+<div class="fields">
+<label>Reading date<input name="reading" type="date" min="1800-01-01" max="2399-12-31" required><small>Defaults to today on your device.</small></label>
+<label>Override birth time offset<input name="offset" placeholder="Automatic"><small>Optional, e.g. +05:30. Use for ambiguous times or if the inferred time zone is wrong.</small></label>
+</div>
+</details>
+<label>Reading focus<select name="focus"><option value="overview">Overview</option><option value="career">Career and job search</option><option value="relationships">Relationships</option></select></label>
+<button>Get Vedic reading</button>
+</form>
+<form id="numbers" hidden>
+<h2>Date numerology</h2>
+<div class="fields"><label>Birth date<input name="birth" type="date" required></label><label>Personal year<input name="year" type="number" min="1" max="9999" required></label></div>
+<button>Calculate numbers</button>
+</form>
+<form id="palm" hidden>
+<h2>Palm lines</h2>
+<label>Palm photo<input id="palm-photo" type="file" accept="image/jpeg,image/png,image/webp"></label>
+<small>Use a clear photo of one open palm. Photo analysis runs through Ollama on this device.</small>
+<img id="palm-preview" hidden alt="Selected palm photo">
+<label>Ollama vision model<input id="palm-model" value="gemma3:4b"></label>
+<button id="scan-palm" type="button">Identify palm lines</button>
+<details><summary>Photo setup</summary><p>Quit any running Ollama app, then start it from a terminal with the site explicitly allowed:</p><pre>OLLAMA_NO_CLOUD=1 OLLAMA_ORIGINS=https://codegeekabhi.github.io ollama serve</pre><p>In a second terminal, run <code>ollama pull gemma3:4b</code>. Allow local-network access if your browser asks. <a href="https://docs.ollama.com/faq">Ollama setup guide</a></p></details>
+<p id="palm-status" role="status">Review the suggested line shapes before generating a reading. You can also enter them manually.</p>
+<div class="fields" id="palm-fields"></div>
+<button>Read palm lines</button>
+</form>
+</section>
+<section class="panel output" aria-labelledby="result-title">
+<h2 id="result-title">Results</h2>
+<div id="result" role="status" aria-live="polite"><p>Your results will appear here.</p></div>
+</section>
+</div>
+<footer>Chart calculations run in your browser. Place search sends only the place name to Photon. Calculation libraries load from jsDelivr. Traditional readings are for reflection. <a href="https://github.com/swisseph-js/swisseph">Ephemeris source</a> · <a href="./LICENSE">License</a></footer>
+</main>
+</body>
+</html>
