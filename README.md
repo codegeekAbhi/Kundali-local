@@ -122,3 +122,5 @@ Swiss Ephemeris is installed as a dependency and has [open-source and commercial
 
 
 [\#VedicAstrology](https://github.com/topics/vedic-astrology) · [\#Kundli](https://github.com/topics/kundli) · [\#astrotalk like](https://github.com/topics/astrotalklike)  · [\#Numerology](https://github.com/topics/numerology) · [\#Palmistry](https://github.com/topics/palmistry) · [\#Ollama](https://github.com/topics/ollama) · 
+
+#VedicAstrology #KundliCalculator #Jyotish #VimshottariDasha #LalKitab #Numerology #Palmistry #LocalAI #Ollama #Python
