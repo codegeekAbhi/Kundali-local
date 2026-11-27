@@ -37,12 +37,34 @@ export function dasha(birth, moon, instant) {
   return [maha, antar, inner].map(period => ({...period, name:lords[period.lord]}));
 }
 
-export function calculate(swe, input) {
-  const offset = /^([+-])(\d{2}):(\d{2})$/.exec(input.offset);
-  if (!offset || +offset[2] > 14 || +offset[3] > 59 || (+offset[2] === 14 && +offset[3] > 0)) {
-    throw new Error("Enter a valid UTC offset such as +05:30.");
+export function birthInstant(date, time, offset, timeZone) {
+  const wall = Date.parse(date + "T" + time + ":00Z");
+  if (!Number.isFinite(wall)) throw new Error("Check the birth date and time.");
+  if (offset) {
+    const match = /^([+-])(\d{2}):(\d{2})$/.exec(offset);
+    if (!match || +match[2] > 14 || +match[3] > 59 || (+match[2] === 14 && +match[3] > 0)) {
+      throw new Error("Enter a valid UTC offset such as +05:30.");
+    }
+    return Date.parse(date + "T" + time + ":00" + offset);
   }
-  const birth = Date.parse(input.date + "T" + input.time + ":00" + input.offset);
+  const clock = new Intl.DateTimeFormat("en-GB", {
+    timeZone, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hourCycle:"h23",
+  });
+  const localEpoch = instant => {
+    const parts = Object.fromEntries(clock.formatToParts(instant).map(({type,value}) => [type,value]));
+    return Date.parse(parts.year+"-"+parts.month+"-"+parts.day+"T"+parts.hour+":"+parts.minute+":"+parts.second+"Z");
+  };
+  const probes = [wall - days, wall, wall + days];
+  const offsets = new Set(probes.map(instant => localEpoch(instant) - instant));
+  const matches = [...offsets].map(delta => wall - delta).filter(instant => localEpoch(instant) === wall);
+  if (!matches.length) throw new Error("That local time falls in a clock change. Check the time or enter its UTC offset in Advanced options.");
+  if (matches.length > 1) throw new Error("That local time occurred twice. Enter the UTC offset at birth in Advanced options.");
+  return matches[0];
+}
+
+export function calculate(swe, input) {
+  const birth = birthInstant(input.date, input.time, input.offset, input.timeZone);
   const instant = Date.parse(input.reading + "T00:00:00Z");
   if (!Number.isFinite(birth) || !Number.isFinite(instant)) throw new Error("Check the dates and birth time.");
   const jd = swe.dateToJulianDay(new Date(birth));
