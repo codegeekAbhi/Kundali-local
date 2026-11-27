@@ -85,8 +85,32 @@ export function calculate(swe, input) {
     const current = sign(position(transitJd,id) + delta);
     return {name, sign:signs[current], house:house(current,sign(ascendant)), moonHouse:house(current,sign(moon))};
   });
+  const periods = dasha(birth,moon,instant);
+  const changes = [];
+  for (const [name,id] of [["Jupiter",5],["Saturn",6]]) {
+    const original = sign(position(transitJd,id));
+    for (let step=1; step<=720; step++) {
+      const next = sign(position(transitJd + step/4,id));
+      if (next === original) continue;
+      let lo = transitJd + (step-1)/4, hi = transitJd + step/4;
+      while (hi-lo > 1/1440) {
+        const mid = (hi+lo)/2;
+        if (sign(position(mid,id)) === original) lo=mid; else hi=mid;
+      }
+      changes.push({name, sign:signs[next], house:house(next,sign(ascendant)),
+                    date:instant+(hi-transitJd)*days});
+      break;
+    }
+  }
+  if (periods.length) {
+    const date = Math.ceil(periods.at(-1).end);
+    if (date <= instant + 180*days) {
+      changes.push({date, sequence:dasha(birth,moon,date).map(p=>p.name).join(' / ')});
+    }
+  }
+  changes.sort((a,b)=>a.date-b.date);
   return {positions, transits, star: stars[Math.floor(segment)], pada: Math.floor((segment % 1)*4)+1,
-          periods:dasha(birth,moon,instant), birth};
+          periods, changes, birth};
 }
 
 export function numerology(birth, year) {
