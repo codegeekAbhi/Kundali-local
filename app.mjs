@@ -53,8 +53,102 @@ picker.addEventListener('change', () => {
   for (const form of forms) form.hidden = form.id !== picker.value;
   results.replaceChildren(paragraph('Your results will appear here.'));
 });
-document.querySelector('[name=reading]').value = utcDate(Date.now());
+const today = new Date();
+const pad = n => String(n).padStart(2,'0');
+document.querySelector('[name=reading]').value =
+  today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
 document.querySelector('[name=year]').value = new Date().getFullYear();
+
+const placeMode = document.querySelector('#place-mode');
+const query = document.querySelector('#place-query');
+const searchButton = document.querySelector('#search-place');
+const matches = document.querySelector('#place-matches');
+const matchesLabel = document.querySelector('#place-matches-label');
+const placeStatus = document.querySelector('#place-status');
+const placeCache = new Map();
+let places = [];
+let timezoneLookup;
+
+function clearMatches() {
+  places = [];
+  matches.replaceChildren();
+  matchesLabel.hidden = true;
+  placeStatus.textContent = '';
+}
+
+placeMode.addEventListener('change', () => {
+  const manual = placeMode.value === 'coordinates';
+  document.querySelector('#place-search').hidden = manual;
+  document.querySelector('#place-coordinates').hidden = !manual;
+  for (const name of ['lat','lon']) document.querySelector('[name='+name+']').required = manual;
+});
+query.addEventListener('input', clearMatches);
+query.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    searchButton.click();
+  }
+});
+
+searchButton.addEventListener('click', async () => {
+  clearMatches();
+  const sought = query.value.trim();
+  if (sought.length < 2) {
+    placeStatus.textContent = 'Enter a place name. Add the district or country to narrow the results.';
+    return;
+  }
+  searchButton.disabled = true;
+  placeStatus.textContent = 'Searching…';
+  try {
+    let found = placeCache.get(sought.toLowerCase());
+    if (!found) {
+      const url = new URL('https://photon.komoot.io/api/');
+      url.search = new URLSearchParams({q:sought,limit:'8',lang:'en'});
+      const response = await fetch(url, {credentials:'omit', signal:AbortSignal.timeout(12000)});
+      if (!response.ok) throw new Error('Search unavailable');
+      const {features} = await response.json();
+      found = features.flatMap(({geometry, properties:p}) => {
+        const [lon,lat] = geometry?.coordinates ?? [];
+        if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) >= 90 || Math.abs(lon) > 180) return [];
+        const label = [...new Set([p.name,p.city,p.district,p.county,p.state,p.country].filter(Boolean))].join(', ');
+        return label ? [{lat,lon,label}] : [];
+      });
+      if (placeCache.size >= 40) placeCache.clear();
+      placeCache.set(sought.toLowerCase(), found);
+    }
+    if (query.value.trim() !== sought) return;
+    places = found;
+    if (!places.length) {
+      placeStatus.textContent = 'No matches. Try a nearby town or enter coordinates.';
+      return;
+    }
+    matches.add(new Option('Select a result',''));
+    places.forEach(({label},index) => matches.add(new Option(label,String(index))));
+    matchesLabel.hidden = false;
+    placeStatus.textContent = 'Choose the location that matches your birthplace.';
+  } catch {
+    if (query.value.trim() === sought) placeStatus.textContent = 'Place search is unavailable. Try again or enter coordinates.';
+  } finally {
+    searchButton.disabled = false;
+  }
+});
+
+async function location(data) {
+  const search = placeMode.value === 'search';
+  const place = search ? (matches.value === '' ? undefined : places[Number(matches.value)])
+                       : {lat:Number(data.lat),lon:Number(data.lon)};
+  if (!place) throw new Error('Search for your birthplace and choose a matching result, or enter coordinates.');
+  const offset = data.offset.trim();
+  if (offset) return {...place, offset};
+  try {
+    timezoneLookup ??= import('https://cdn.jsdelivr.net/npm/tz-lookup@6.1.25/+esm')
+      .then(module => module.default).catch(error => { timezoneLookup = undefined; throw error; });
+    const lookup = await timezoneLookup;
+    return {...place, offset, timeZone:lookup(place.lat,place.lon)};
+  } catch {
+    throw new Error('Could not infer a birth time zone. Enter your offset in Advanced options.');
+  }
+}
 
 function loadEngine() {
   if (!engine) {
@@ -84,8 +178,10 @@ async function run(form, data) {
     ];
   }
 
-  const chart = calculate(await loadEngine(), data);
+  const selected = await location(data);
+  const chart = calculate(await loadEngine(), {...data, ...selected});
   const nodes = [
+    paragraph([selected.label, selected.timeZone || ('UTC' + selected.offset)].filter(Boolean).join(' · ')),
     paragraph('Lahiri sidereal zodiac · whole-sign houses · mean lunar nodes'),
     paragraph('Moon nakshatra: ' + chart.star + ', pada ' + chart.pada),
     table(['Point', 'D1 sign', '°', 'House', 'D9 sign', 'D9 house'], chart.positions.map(
