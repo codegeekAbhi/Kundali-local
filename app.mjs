@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import {calculate, numerology, utcDate} from './engine.mjs';
+import {numerologyReading, vedicReading} from './interpretations.mjs';
+import {identifyLines} from './palm-photo.mjs';
 const results = document.querySelector('#result');
 const picker = document.querySelector('#tool');
 const forms = [...document.querySelectorAll('form')];
@@ -26,13 +28,6 @@ function table(headers, rows) {
   return wrap;
 }
 
-const themes = [
-  'identity and initiative', 'resources and speech', 'communication and effort',
-  'home and family', 'creativity and learning', 'routines and obligations',
-  'partnerships', 'shared resources and change', 'beliefs and higher learning',
-  'career and public responsibilities', 'networks and gains', 'retreat and expenses',
-];
-
 const palm = {
   Heart: {straight:'a measured approach to expressing feelings',curved:'an expressive approach to relationships'},
   Head: {straight:'structured thinking',sloping:'imaginative thinking'},
@@ -48,6 +43,49 @@ for (const [name, shapes] of Object.entries(palm)) {
   label.append(select);
   document.querySelector('#palm-fields').append(label);
 }
+
+const photoInput = document.querySelector('#palm-photo');
+const preview = document.querySelector('#palm-preview');
+const scan = document.querySelector('#scan-palm');
+const palmStatus = document.querySelector('#palm-status');
+let previewUrl;
+photoInput.addEventListener('change', () => {
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  const file = photoInput.files[0];
+  preview.hidden = !file;
+  if (file) {
+    previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
+  } else preview.removeAttribute('src');
+  for (const field of document.querySelectorAll('#palm-fields select')) field.value = '';
+});
+scan.addEventListener('click', async () => {
+  const file = photoInput.files[0];
+  const model = document.querySelector('#palm-model').value.trim();
+  if (!file || !model) {
+    palmStatus.textContent = 'Choose a palm photo and enter your installed vision model name.';
+    return;
+  }
+  if (/(?:-cloud|:cloud)$/i.test(model)) {
+    palmStatus.textContent = 'Choose a downloaded local vision model.';
+    return;
+  }
+  scan.disabled = true;
+  palmStatus.textContent = 'Analyzing the photo in local Ollama…';
+  try {
+    const allowed = Object.fromEntries(Object.entries(palm).map(([name, shapes])=>[name,Object.keys(shapes)]));
+    const labels = await identifyLines(file,model,allowed);
+    if (photoInput.files[0] !== file) return;
+    for (const field of document.querySelectorAll('#palm-fields select')) field.value = labels[field.name] ?? '';
+    palmStatus.textContent = Object.keys(labels).length
+      ? 'Review or correct the suggestions, then select Read palm lines.'
+      : 'No clear lines identified. Try a better-lit photo or enter the shapes manually.';
+  } catch (error) {
+    palmStatus.textContent = error.message;
+  } finally {
+    scan.disabled = false;
+  }
+});
 
 picker.addEventListener('change', () => {
   for (const form of forms) form.hidden = form.id !== picker.value;
@@ -167,7 +205,10 @@ function loadEngine() {
 
 async function run(form, data) {
   if (form.id === 'numbers') {
-    return [table(['Number','Value'], Object.entries(numerology(data.birth,data.year)))];
+    const readings = numerologyReading(numerology(data.birth,data.year));
+    return [...readings.flatMap(([label,number,theme,description])=>[
+      element('h3', label+' '+number+' · '+theme), paragraph(description),
+    ]), paragraph('These meanings come from numerology tradition and can be used as reflection prompts.')];
   }
   if (form.id === 'palm') {
     const selected = Object.entries(data).filter(([,shape]) => shape);
@@ -180,7 +221,20 @@ async function run(form, data) {
 
   const selected = await location(data);
   const chart = calculate(await loadEngine(), {...data, ...selected});
+  const reading = vedicReading(chart, data.focus);
+  const timing = element('ul', '');
+  for (const item of reading.timing) timing.append(element('li', item));
+  const forecast = element('section','');
+  forecast.className = 'reading';
+  forecast.append(
+    element('h3', 'What you may be facing'), paragraph(reading.challenge),
+    element('h3', 'What may help'), paragraph(reading.response),
+    element('h3', 'When the emphasis may change'), paragraph(reading.period),
+    reading.timing.length ? timing : paragraph('No Jupiter, Saturn, or dasha change found within the next 180 days.'),
+    paragraph('These are traditional timing windows. They cannot predict when a personal problem will resolve.'),
+  );
   const nodes = [
+    forecast,
     paragraph([selected.label, selected.timeZone || ('UTC' + selected.offset)].filter(Boolean).join(' · ')),
     paragraph('Lahiri sidereal zodiac · whole-sign houses · mean lunar nodes'),
     paragraph('Moon nakshatra: ' + chart.star + ', pada ' + chart.pada),
@@ -195,11 +249,7 @@ async function run(form, data) {
   nodes.push(
     element('h3', 'Slow-planet transits'),
     table(['Planet','Sign','From ascendant','From Moon'], chart.transits.map(p => [p.name,p.sign,p.house,p.moonHouse])),
-    element('h3', 'Traditional reading'),
-    paragraph('The natal Moon in house ' + chart.positions[2].house +
-       ' emphasizes ' + themes[chart.positions[2].house - 1] +
-      '. Transiting Jupiter in house ' + chart.transits[0].house + ' adds a theme of ' +
-      themes[chart.transits[0].house - 1] + '. Treat these as traditional themes for reflection.' ),
+
   );
   return nodes;
 }
