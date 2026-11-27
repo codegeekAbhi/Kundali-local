@@ -1,5 +1,15 @@
 # Kundali Local — Offline Vedic Astrology, Numerology & AI Palmistry
 
+**[Launch Kundali Local in your browser →](https://codegeekabhi.github.io/Kundali-local/)**
+
+## Use the web app
+
+- **Vedic astrology:** Search for your birthplace by city, district, or village, or enter coordinates. Get a birth chart and a traditional reading that explains current themes, practical responses, and upcoming dasha or transit changes.
+- **Numerology:** Calculate Life Path, Birth Day, and Personal Year and read what each number traditionally signifies.
+- **Palmistry:** Enter palm line shapes manually or choose a photo and use a local Ollama vision model to suggest shapes you can review.
+
+Vedic astrology, numerology, and manual palmistry run in the browser without an account, a Python installation, or an API key. Birthplace search sends the typed place name to Photon. Birth dates and times are used in the browser. Photo analysis requires Ollama on your device.
+
 A command-line Vedic birth chart calculator with optional interpretations. It calculates D1 and D9 placements, Moon nakshatra and pada, and Vimshottari periods through Pratyantardasha. The optional Lal Kitab view shows numbered D1 house occupancy for a traditional reading. Lal Kitab-specific dasha, varshphal and remedy calculations are outside the current feature set.
 
 **Generate a kundli without an account or API key.** Kundali Local is a Python CLI for calculating a Vedic birth chart, exploring planetary timing, and reading palm lines from a photo with an optional vision model.
