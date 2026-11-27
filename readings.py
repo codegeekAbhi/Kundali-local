@@ -44,18 +44,24 @@ def offline_reading(ascendant, moon, moon_house, period, occupants, lal_kitab, t
 
 
 def ai_reading(mode, model, topic, chart, lal_kitab):
+    instructions = (
+        "Write a concise traditional astrology interpretation using only these calculated "
+        "chart facts. Preserve placements and dates. State when information is missing. "
+        "Avoid guarantees, exact hiring predictions, and medical, legal or financial advice. "
+        "If asked for Lal Kitab, label it as a separate house-based reading and do not "
+        "invent Lal Kitab dasha, varshphal or remedy results."
+    )
+    return request_reading(
+        mode, model, instructions,
+        f"Topic: {topic}. Lal Kitab house reading requested: {lal_kitab}.\n\n{chart}",
+    )
+
+
+def request_reading(mode, model, instructions, observations):
     headers = {"Content-Type": "application/json"}
     body = {"model": model, "messages": [
-        {"role": "system", "content": (
-            "Write a concise traditional astrology interpretation using only these calculated "
-            "chart facts. Preserve placements and dates. State when information is missing. "
-            "Avoid guarantees, exact hiring predictions, and medical, legal or financial advice. "
-            "If asked for Lal Kitab, label it as a separate house-based reading and do not "
-            "invent Lal Kitab dasha, varshphal or remedy results."
-        )},
-        {"role": "user", "content": (
-            f"Topic: {topic}. Lal Kitab house reading requested: {lal_kitab}.\n\n{chart}"
-        )},
+        {"role": "system", "content": instructions},
+        {"role": "user", "content": observations},
     ]}
     if mode == "openai":
         key = os.environ.get("OPENAI_API_KEY", "").strip()
