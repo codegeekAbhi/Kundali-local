@@ -40,12 +40,15 @@ def resolve_birth(value, zone_name, fold):
     return instants[0 if fold is None else fold]
 
 
-def print_dasha(birth, moon, as_of, emit):
+def print_dasha(birth, moon, as_of, emit, timeline=0):
     index = int(moon / NAKSHATRA_WIDTH) % len(DASHA)
     progress = moon / NAKSHATRA_WIDTH % 1
     lord, years = DASHA[index]
     start = birth - timedelta(days=progress * years * DASHA_YEAR_DAYS)
     emit(f"Birth mahadasha: {lord} ({years * (1 - progress):.2f} years remaining at birth)")
+    if as_of < birth:
+        emit("As-of date precedes birth.")
+        return None
     for offset in range(18):
         period_index = (index + offset) % len(DASHA)
         lord, years = DASHA[period_index]
@@ -57,6 +60,22 @@ def print_dasha(birth, moon, as_of, emit):
             emit(f"Antardasha: {DASHA[sub_index][0]} ({sub_start.date()} to {sub_end.date()} UTC)")
             inner_index, inner_start, inner_end = active_subperiod(sub_index, sub_start, sub_end, as_of)
             emit(f"Pratyantardasha: {DASHA[inner_index][0]} ({inner_start.date()} to {inner_end.date()} UTC)")
+            if timeline:
+                emit(f"Upcoming Vimshottari boundaries (UTC, {timeline} days):")
+                limit = as_of + timedelta(days=timeline)
+                cursor = as_of
+                count = 0
+                while cursor < limit:
+                    active = active_dasha_sequence(period_index, start, cursor)
+                    if active is None:
+                        break
+                    sequence, boundary = active
+                    if count:
+                        emit(f"  {cursor.isoformat(timespec='seconds')}  {sequence}")
+                    cursor = boundary
+                    count += 1
+                if count <= 1:
+                    emit("  No changes within this window.")
             return " / ".join(DASHA[i][0] for i in (period_index, sub_index, inner_index))
         start = end
     emit("As-of date is outside the available dasha timeline.")
@@ -75,6 +94,62 @@ def active_subperiod(parent_index, start, end, as_of):
     raise ValueError("Lookup time falls outside the parent dasha period.")
 
 
+def active_dasha_sequence(first_index, start, instant):
+    for offset in range(len(DASHA) * 2):
+        index = (first_index + offset) % len(DASHA)
+        end = start + timedelta(days=DASHA[index][1] * DASHA_YEAR_DAYS)
+        if start <= instant < end:
+            antar, antar_start, antar_end = active_subperiod(index, start, end, instant)
+            inner, _, inner_end = active_subperiod(antar, antar_start, antar_end, instant)
+            return " / ".join(DASHA[i][0] for i in (index, antar, inner)), inner_end
+        start = end
+    return None
+
+
+def julian_day(swe, instant):
+    hour = (instant.hour + instant.minute / 60 + instant.second / 3600
+            + instant.microsecond / 3.6e9)
+    return swe.julday(instant.year, instant.month, instant.day, hour)
+
+
+def next_sign_change(sign_at, start, days=90):
+    original = sign_at(start)
+    previous = start
+    for step in range(1, days * 4 + 1):
+        candidate = start + timedelta(hours=6 * step)
+        if sign_at(candidate) != original:
+            while candidate - previous > timedelta(minutes=1):
+                midpoint = previous + (candidate - previous) / 2
+                if sign_at(midpoint) == original:
+                    previous = midpoint
+                else:
+                    candidate = midpoint
+            return sign_at(candidate), candidate
+        previous = candidate
+    return None
+
+
+def print_transits(swe, flags, as_of, ascendant, moon, emit):
+    emit(f"Slow-planet transits at {as_of.isoformat()} (Lahiri, whole sign):")
+    rising_sign = int(ascendant / 30)
+    moon_sign = int(moon / 30)
+    for name, body, opposite in (
+        ("Jupiter", swe.JUPITER, 0), ("Saturn", swe.SATURN, 0),
+        ("Rahu", swe.MEAN_NODE, 0), ("Ketu", swe.MEAN_NODE, 180),
+    ):
+        def sign_at(instant):
+            longitude = swe.calc_ut(julian_day(swe, instant), body, flags)[0][0]
+            return int((longitude + opposite) % 360 / 30)
+
+        sign = sign_at(as_of)
+        emit(f"  {name}: {SIGNS[sign]}, house {(sign - rising_sign) % 12 + 1} "
+             f"from Lagna, house {(sign - moon_sign) % 12 + 1} from Moon")
+        change = next_sign_change(sign_at, as_of)
+        if change:
+            next_sign, when = change
+            emit(f"    Next sign: {SIGNS[next_sign]} around {when.date()} UTC")
+
+
 def navamsha_sign(longitude):
     return int(longitude * 3 / 10) % len(SIGNS)
 
@@ -87,12 +162,18 @@ def main():
     parser.add_argument("longitude", type=float, help="East positive, west negative")
     parser.add_argument("--fold", type=int, choices=(0, 1))
     parser.add_argument("--as-of", help="Dasha lookup date (YYYY-MM-DD, midnight UTC)")
+    parser.add_argument("--transits", action="store_true",
+                        help="Show slow-planet transits and sign changes within 90 days")
+    parser.add_argument("--timeline", type=int, metavar="DAYS",
+                        help="Show upcoming Vimshottari changes over 1 to 730 days")
     parser.add_argument("--lal-kitab", action="store_true", help="Show house occupancy for a Lal Kitab reading")
     parser.add_argument("--reading", choices=("offline", "ollama", "openai"),
                         help="Add a reading. Without this flag, print the chart only.")
     parser.add_argument("--model", help="Model name for Ollama or OpenAI")
     parser.add_argument("--topic", choices=("overview", "career", "relationships"), default="overview")
     args = parser.parse_args()
+    if args.timeline is not None and not 1 <= args.timeline <= 730:
+        parser.error("--timeline must be between 1 and 730 days.")
     if args.reading in ("ollama", "openai") and not args.model:
         parser.error("--model is required for an AI reading.")
     if not (-90 < args.latitude < 90 and -180 <= args.longitude <= 180):
@@ -111,8 +192,7 @@ def main():
     except ImportError:
         parser.exit(1, "Install pyswisseph before running this calculator.\n")
 
-    hour = birth.hour + birth.minute / 60 + birth.second / 3600 + birth.microsecond / 3.6e9
-    jd = swe.julday(birth.year, birth.month, birth.day, hour)
+    jd = julian_day(swe, birth)
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     flags = swe.FLG_MOSEPH | swe.FLG_SIDEREAL
     bodies = (
@@ -152,7 +232,12 @@ def main():
     nakshatra = NAKSHATRAS[int(moon / NAKSHATRA_WIDTH)]
     pada = int((moon / NAKSHATRA_WIDTH % 1) * 4) + 1
     emit(f"Moon nakshatra: {nakshatra}, pada {pada}")
-    period = print_dasha(birth, moon, as_of, emit) or "outside the available timeline"
+    period = print_dasha(birth, moon, as_of, emit, args.timeline) or "outside the available timeline"
+    if args.transits:
+        try:
+            print_transits(swe, flags, as_of, ascendant, moon, emit)
+        except (swe.Error, OverflowError) as error:
+            parser.exit(1, f"Transit calculation failed: {error}\n")
     if args.lal_kitab:
         emit("\nLal Kitab reading inputs | D1 whole-sign houses shown by number")
         for number, occupants in enumerate(house_occupants, start=1):
