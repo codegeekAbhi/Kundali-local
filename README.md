@@ -38,9 +38,28 @@ python kundli.py 2000-01-01T12:00 Asia/Kolkata 28.6139 77.2090 --reading openai 
 
 AI explains the calculated chart. Optional focus areas are overview, career and relationships. If the provider is unavailable, the CLI prints the chart and an offline reading.
 
+## Transits, upcoming dasha changes, and numerology
+
+```sh
+python kundli.py 2000-01-01T12:00 Asia/Kolkata 28.6139 77.2090 \
+  --as-of 2026-11-26 --transits --timeline 180
+python numerology.py 2000-01-01 --year 2026
+```
+
+- `--transits` shows Jupiter, Saturn, mean Rahu and mean Ketu relative to the natal ascendant and Moon. It searches the next 90 days for the first sign crossing per body using six-hour samples. Listed dates are approximate UTC dates.
+- `--timeline DAYS` prints each upcoming change to the three-level Vimshottari sequence. The window excludes its ending instant. Times are UTC and depend on the recorded birth time and the configured dasha-year convention.
+- `numerology.py` prints Life Path, Birth Day, and Personal Year. Life Path reduces birth year + month + day. Birth Day reduces the day of the month. Personal Year replaces the birth year with the requested calendar year. This implementation reduces to one digit, including 11, 22, and 33. It needs only Python and runs offline.
+- With `--transits` or `--timeline` enabled, optional AI modes can interpret those results alongside the natal chart.
+
+## Tests
+
+```sh
+python -m unittest discover -v
+```
+
 ## Privacy and calculation settings
 
-Chart computation runs on your machine in every mode. Hosted mode sends derived chart placements, dasha dates and reading options to OpenAI. Derived charts can still be sensitive. The request omits your raw birth timestamp, coordinates and timezone. Ollama mode connects directly to the local loopback address. The tool does not save a profile. Your shell can record the command in its history.
+Chart computation runs on your machine in every mode. Hosted mode sends derived chart placements, dasha dates, requested transit results, and reading options to OpenAI. Derived charts can still be sensitive. The request omits your raw birth timestamp, coordinates and timezone. Ollama mode connects directly to the local loopback address. The tool does not save a profile. Your shell can record the command in its history.
 
 Calculations use Swiss Ephemeris with the built-in Moshier ephemeris, Lahiri ayanamsha, whole-sign houses, mean nodes, and a 365.25-day Vimshottari year. Traditional interpretations cannot reliably predict future events.
 
