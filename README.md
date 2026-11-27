@@ -1,12 +1,23 @@
-# Kundli Local
+# Kundali Local — Offline Vedic Astrology, Numerology & AI Palmistry
 
-A command-line Vedic birth chart calculator with optional interpretations. It calculates D1 and D9 placements, Moon nakshatra and pada, and Vimshottari periods through Pratyantardasha. The optional Lal Kitab view shows numbered D1 house occupancy for a traditional reading. Lal Kitab-specific dasha, varshphal and remedy calculations are outside the current feature set.
+**Generate a kundli without an account or API key.** Kundali Local is a Python CLI for calculating a Vedic birth chart, exploring planetary timing, and reading palm lines from a photo with an optional vision model.
 
-## Setup
+| What you can explore | What the tool calculates or shows |
+| --- | --- |
+| **Vedic astrology (Jyotish)** | D1 birth chart, D9 Navamsha, Moon nakshatra and pada, Vimshottari dasha timeline, and Jupiter, Saturn, Rahu, and Ketu transits. |
+| **Lal Kitab** | Numbered house placements for a traditional reading. |
+| **Date-based numerology** | Life Path, Birth Day, and Personal Year numbers. |
+| **Palmistry** | Heart, head, life, and fate line readings using manual input or photo suggestions you confirm. |
 
-Use Python 3.9 or newer with a compatible Swiss Ephemeris installation.
+The calculator runs on your machine. Choose offline templates, local Ollama AI with a downloaded model, or optional OpenAI readings with an API key. Chart readings are traditional interpretations for reflection.
+
+## Quick start
+
+Use Python 3.9 or newer with a compatible Swiss Ephemeris installation. Clone the repository, then run the setup commands from its root.
 
 ```sh
+git clone https://github.com/codegeekAbhi/Kundali-local.git
+cd Kundali-local
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
@@ -51,7 +62,7 @@ python numerology.py 2000-01-01 --year 2026
 - `numerology.py` prints Life Path, Birth Day, and Personal Year. Life Path reduces birth year + month + day. Birth Day reduces the day of the month. Personal Year replaces the birth year with the requested calendar year. This implementation reduces to one digit, including 11, 22, and 33. It needs only Python and runs offline.
 - With `--transits` or `--timeline` enabled, optional AI modes can interpret those results alongside the natal chart.
 
-## Palmistry
+## Palmistry from a photo or manual input
 
 Enter the features you observe on one hand. Run `python palmistry.py --help` for the location of each line and the supported shapes. Omit any feature you are unsure about.
 
@@ -63,7 +74,7 @@ python palmistry.py --hand right --heart curved --reading openai --model MODEL_I
 
 The default reading runs offline with Python alone. Ollama can expand it using a downloaded local model without a key. OpenAI mode sends the chosen hand and line descriptions to OpenAI and requires `OPENAI_API_KEY`. The command needs no birth details. Palmistry is presented as folklore for reflection.
 
-### Palm photos
+### Photo palmistry
 
 Take a straight-on photo of one open palm with even lighting. Keep the wrist and fingers in frame so the model can orient itself. Use a JPEG or PNG up to 10 MB and select a vision-capable model. The terminal asks you to confirm, edit, or skip suggested labels before it generates the reading.
 
@@ -88,8 +99,8 @@ Chart computation runs on your machine in every mode. Hosted mode sends derived 
 
 Calculations use Swiss Ephemeris with the built-in Moshier ephemeris, Lahiri ayanamsha, whole-sign houses, mean nodes, and a 365.25-day Vimshottari year. Traditional interpretations cannot reliably predict future events.
 
-## Upload to GitHub
-
-Extract the ZIP and upload the contents of the `kundli-local` folder to a new repository. The archive contains source and setup files. It contains no personal birth details, API keys, or AstroTalk files.
+## Dependency licensing
 
 Swiss Ephemeris is installed as a dependency and has [open-source and commercial licensing options](https://www.astro.com/swisseph/swephinfo_e.htm). Review its licensing before distributing a bundled binary or offering this tool as a public service. Choose a license for this repository before inviting reuse.
+
+[\#VedicAstrology](https://github.com/topics/vedic-astrology) · [\#Kundli](https://github.com/topics/kundli) · [\#Jyotish](https://github.com/topics/jyotish) · [\#Numerology](https://github.com/topics/numerology) · [\#Palmistry](https://github.com/topics/palmistry) · [\#Ollama](https://github.com/topics/ollama)
