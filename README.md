@@ -103,4 +103,4 @@ Calculations use Swiss Ephemeris with the built-in Moshier ephemeris, Lahiri aya
 
 Swiss Ephemeris is installed as a dependency and has [open-source and commercial licensing options](https://www.astro.com/swisseph/swephinfo_e.htm). Review its licensing before distributing a bundled binary or offering this tool as a public service. Choose a license for this repository before inviting reuse.
 
-[\#VedicAstrology](https://github.com/topics/vedic-astrology) · [\#Kundli](https://github.com/topics/kundli) · [\#Jyotish](https://github.com/topics/jyotish) · [\#Numerology](https://github.com/topics/numerology) · [\#Palmistry](https://github.com/topics/palmistry) · [\#Ollama](https://github.com/topics/ollama)
+[\#VedicAstrology](https://github.com/topics/vedic-astrology) · [\#Kundli](https://github.com/topics/kundli) · [\#workslikeAStrotalk] · [\#Numerology](https://github.com/topics/numerology) · [\#Palmistry](https://github.com/topics/palmistry) · [\#Ollama](https://github.com/topics/ollama) · [\#Astrotalk]
