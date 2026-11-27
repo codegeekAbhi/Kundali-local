@@ -1,5 +1,7 @@
 # Kundali Local — Offline Vedic Astrology, Numerology & AI Palmistry
 
+A command-line Vedic birth chart calculator with optional interpretations. It calculates D1 and D9 placements, Moon nakshatra and pada, and Vimshottari periods through Pratyantardasha. The optional Lal Kitab view shows numbered D1 house occupancy for a traditional reading. Lal Kitab-specific dasha, varshphal and remedy calculations are outside the current feature set.
+
 **Generate a kundli without an account or API key.** Kundali Local is a Python CLI for calculating a Vedic birth chart, exploring planetary timing, and reading palm lines from a photo with an optional vision model.
 
 | What you can explore | What the tool calculates or shows |
@@ -9,21 +11,34 @@
 | **Date-based numerology** | Life Path, Birth Day, and Personal Year numbers. |
 | **Palmistry** | Heart, head, life, and fate line readings using manual input or photo suggestions you confirm. |
 
-The calculator runs on your machine. Choose offline templates, local Ollama AI with a downloaded model, or optional OpenAI readings with an API key. Chart readings are traditional interpretations for reflection.
 
-## Quick start
+## Setup
 
-Use Python 3.9 or newer with a compatible Swiss Ephemeris installation. Clone the repository, then run the setup commands from its root.
+Use Python 3.9 or newer with a compatible Swiss Ephemeris installation.
 
 ```sh
-git clone https://github.com/codegeekAbhi/Kundali-local.git
-cd Kundali-local
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
 On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`.
+
+## Desktop GUI
+
+After setup, launch the app from the repository root:
+
+```sh
+python gui.py
+```
+
+- **Vedic chart:** Enter birth date and local time, the IANA time zone, and coordinates. Choose a reading date and focus, then select **Calculate chart**. The default includes current transits and the next 31 days of dasha changes. This is a rolling timing report.
+- **Numerology:** Enter a birth date and the calendar year you want to explore.
+- **Palmistry:** Select line shapes manually, or choose an image with a vision model enabled. Review the suggestions before selecting **Read selected lines**.
+
+The app opens in offline mode and needs no API key. OpenAI actions ask for confirmation before sending chart data, a photo, or line descriptions. The GUI has no profile storage and does not save the results. For local photo analysis, use a downloaded Ollama vision model with cloud features disabled.
+
+The GUI uses Tkinter. If `python -m tkinter` fails, use a Python installation with Tk support (on many Linux distributions the package is called `python3-tk`).
 
 ## Choose a reading mode
 
@@ -62,7 +77,7 @@ python numerology.py 2000-01-01 --year 2026
 - `numerology.py` prints Life Path, Birth Day, and Personal Year. Life Path reduces birth year + month + day. Birth Day reduces the day of the month. Personal Year replaces the birth year with the requested calendar year. This implementation reduces to one digit, including 11, 22, and 33. It needs only Python and runs offline.
 - With `--transits` or `--timeline` enabled, optional AI modes can interpret those results alongside the natal chart.
 
-## Palmistry from a photo or manual input
+## Palmistry
 
 Enter the features you observe on one hand. Run `python palmistry.py --help` for the location of each line and the supported shapes. Omit any feature you are unsure about.
 
@@ -74,7 +89,7 @@ python palmistry.py --hand right --heart curved --reading openai --model MODEL_I
 
 The default reading runs offline with Python alone. Ollama can expand it using a downloaded local model without a key. OpenAI mode sends the chosen hand and line descriptions to OpenAI and requires `OPENAI_API_KEY`. The command needs no birth details. Palmistry is presented as folklore for reflection.
 
-### Photo palmistry
+### Palm photos
 
 Take a straight-on photo of one open palm with even lighting. Keep the wrist and fingers in frame so the model can orient itself. Use a JPEG or PNG up to 10 MB and select a vision-capable model. The terminal asks you to confirm, edit, or skip suggested labels before it generates the reading.
 
@@ -99,8 +114,11 @@ Chart computation runs on your machine in every mode. Hosted mode sends derived 
 
 Calculations use Swiss Ephemeris with the built-in Moshier ephemeris, Lahiri ayanamsha, whole-sign houses, mean nodes, and a 365.25-day Vimshottari year. Traditional interpretations cannot reliably predict future events.
 
-## Dependency licensing
+## Upload to GitHub
+
+Extract the ZIP and upload the contents of the `kundli-local` folder to a new repository. The archive contains source and setup files. It contains no personal birth details, API keys, or AstroTalk files.
 
 Swiss Ephemeris is installed as a dependency and has [open-source and commercial licensing options](https://www.astro.com/swisseph/swephinfo_e.htm). Review its licensing before distributing a bundled binary or offering this tool as a public service. Choose a license for this repository before inviting reuse.
+
 
 [\#VedicAstrology](https://github.com/topics/vedic-astrology) · [\#Kundli](https://github.com/topics/kundli) · [\#astrotalk like](https://github.com/topics/astrotalklike)  · [\#Numerology](https://github.com/topics/numerology) · [\#Palmistry](https://github.com/topics/palmistry) · [\#Ollama](https://github.com/topics/ollama) · 
